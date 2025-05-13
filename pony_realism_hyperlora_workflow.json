@@ -1,0 +1,263 @@
+{
+  "3": {
+    "inputs": {
+      "vae_name": "sdxl_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "4": {
+    "inputs": {
+      "text": "fcsks fxhks fhyks, a woman on her knees on a bed, wearing pink sweatpants and a purple hoodie, facing the camera smiling",
+      "clip": [
+        "15",
+        1
+      ]
+    },
+    "class_type": "BNK_CLIPTextEncodeAdvanced",
+    "_meta": {
+      "title": "CLIP Text Encode (Prompt)"
+    }
+  },
+  "5": {
+    "inputs": {
+      "text": "lowres, bad anatomy",
+      "clip": [
+        "15",
+        1
+      ]
+    },
+    "class_type": "BNK_CLIPTextEncodeAdvanced",
+    "_meta": {
+      "title": "CLIP Text Encode (Negative)"
+    }
+  },
+  "6": {
+    "inputs": {
+      "width": 768,
+      "height": 768,
+      "batch_size": 1
+    },
+    "class_type": "EmptyLatentImage",
+    "_meta": {
+      "title": "Empty Latent Image"
+    }
+  },
+  "2": {
+    "class_type": "HyperLoRAConfig",
+    "inputs": {},
+    "widgets_values": [
+      "clip_vit_large_14_processor",
+      "clip_vit_large_14",
+      1024,
+      64,
+      12,
+      4,
+      4,
+      "clip + arcface",
+      "antelopev2",
+      512,
+      16,
+      128,
+      8,
+      false
+    ],
+    "_meta": {
+      "title": "HyperLoRA Config"
+    }
+  },
+  "3h": {
+    "class_type": "HyperLoRALoader",
+    "inputs": {
+      "config": [
+        "2",
+        0
+      ]
+    },
+    "widgets_values": [
+      "sdxl_hyper_id_lora_v1_fidelity",
+      "fp16"
+    ],
+    "_meta": {
+      "title": "HyperLoRA Loader"
+    }
+  },
+  "17": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "reference.png"
+    },
+    "_meta": {
+      "title": "Load reference face"
+    }
+  },
+  "5b": {
+    "class_type": "ImpactMakeImageBatch",
+    "inputs": {
+      "image1": [
+        "17",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "Make Image Batch"
+    }
+  },
+  "4h": {
+    "class_type": "HyperLoRAFaceAttr",
+    "inputs": {
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "images": [
+        "5b",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "HyperLoRA Face Attributes"
+    }
+  },
+  "7h": {
+    "class_type": "HyperLoRAIDCond",
+    "inputs": {
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "images": [
+        "5b",
+        0
+      ],
+      "face_attr": [
+        "4h",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "HyperLoRA ID Conditioning"
+    }
+  },
+  "8h": {
+    "class_type": "HyperLoRAGenerateIDLoRA",
+    "inputs": {
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "id_cond": [
+        "7h",
+        0
+      ]
+    },
+    "_meta": {
+      "title": "HyperLoRA Generate ID LoRA"
+    }
+  },
+  "10": {
+    "class_type": "CheckpointLoaderSimple",
+    "inputs": {
+      "ckpt_name": "pony_realism_23.safetensors"
+    },
+    "_meta": {
+      "title": "Load PonyRealism SDXL"
+    }
+  },
+  "9": {
+    "class_type": "HyperLoRAApplyLoRA",
+    "inputs": {
+      "model": [
+        "10",
+        0
+      ],
+      "lora": [
+        "8h",
+        0
+      ]
+    },
+    "widgets_values": [
+      0.8
+    ],
+    "_meta": {
+      "title": "Apply HyperLoRA"
+    }
+  },
+  "15": {
+    "class_type": "CLIPSetLastLayer",
+    "inputs": {
+      "clip": [
+        "10",
+        1
+      ]
+    },
+    "widgets_values": [
+      -2
+    ],
+    "_meta": {
+      "title": "CLIP Set Last Layer"
+    }
+  },
+  "7": {
+    "class_type": "KSampler",
+    "inputs": {
+      "seed": 569737278829342,
+      "steps": 30,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m_sde",
+      "scheduler": "karras",
+      "denoise": 1,
+      "model": [
+        "9",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "6",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "KSampler"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "9a": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  }
+}

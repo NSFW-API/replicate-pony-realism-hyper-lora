@@ -1,0 +1,14 @@
+[
+  {
+    "repo": "https://github.com/bytedance/ComfyUI-HyperLoRA",
+    "commit": "c46e29b"
+  },
+  {
+    "repo": "https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb",
+    "commit": "63984de"
+  },
+  {
+    "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
+    "commit": "cd34cfd"
+  }
+]
