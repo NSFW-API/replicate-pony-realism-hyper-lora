@@ -40,9 +40,13 @@ class Predictor(BasePredictor):
         os.makedirs(clip_vit_dir, exist_ok=True)
         os.makedirs(hyperlora_fidelity_dir, exist_ok=True)
 
-        # Create insightface directory
-        insightface_dir = f"{models_dir}/insightface/models/antelopev2"
-        os.makedirs(insightface_dir, exist_ok=True)
+        # Create insightface directory with correct structure
+        insightface_models_dir = f"{models_dir}/insightface/models"
+        antelopev2_dir = f"{insightface_models_dir}/antelopev2"
+        detection_dir = f"{antelopev2_dir}/detection"
+        os.makedirs(insightface_models_dir, exist_ok=True)
+        os.makedirs(antelopev2_dir, exist_ok=True)
+        os.makedirs(detection_dir, exist_ok=True)
 
         # Other model directories
         vae_dir = f"{models_dir}/vae"
@@ -151,6 +155,19 @@ class Predictor(BasePredictor):
             filepath = os.path.join(insightface_dir, filename)
             if not os.path.exists(filepath):
                 print(f"Downloading {filename}...")
+                subprocess.check_call(["pget", "-vf", url, filepath])
+
+        # Add detection model files (required by InsightFace)
+        detection_dir = f"{insightface_dir}/detection"
+        detection_files = {
+            "model-0000.params": "https://huggingface.co/Bullseye-Digital/insightface-detection/resolve/main/model-0000.params",
+            "model-symbol.json": "https://huggingface.co/Bullseye-Digital/insightface-detection/resolve/main/model-symbol.json"
+        }
+
+        for filename, url in detection_files.items():
+            filepath = os.path.join(detection_dir, filename)
+            if not os.path.exists(filepath):
+                print(f"Downloading InsightFace detection {filename}...")
                 subprocess.check_call(["pget", "-vf", url, filepath])
 
         # 5. SDXL VAE
