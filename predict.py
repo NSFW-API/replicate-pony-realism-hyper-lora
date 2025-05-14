@@ -10,10 +10,11 @@ from cog import BasePredictor, Input, Path
 from comfyui import ComfyUI  # pip-installed via cog.yaml
 
 # ---- constants -------------------------------------------------------------
-WORKFLOW_JSON = "pulid_workflow.json"
+WORKFLOW_JSON = "pony_realism_hyperlora_workflow.json"
 OUTPUT_DIR = "/tmp/outputs"
 INPUT_DIR = "/tmp/inputs"
 ALL_DIRS = [OUTPUT_DIR, INPUT_DIR]
+
 
 # ----------------------------------------------------------------------------
 
@@ -23,93 +24,114 @@ class Predictor(BasePredictor):
         for dir_path in ALL_DIRS:
             os.makedirs(dir_path, exist_ok=True)
 
-        # Clone PuLID node if missing
-        if not os.path.exists("ComfyUI/custom_nodes/PuLID_ComfyUI"):
-            print("Cloning PuLID_ComfyUI custom node...")
+        # Clone HyperLoRA nodes if missing
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-HyperLoRA"):
+            print("Cloning ComfyUI-HyperLoRA custom node...")
             subprocess.check_call([
                 "git", "clone", "--depth", "1",
-                "https://github.com/cubiq/PuLID_ComfyUI.git",
-                "ComfyUI/custom_nodes/PuLID_ComfyUI"
+                "https://github.com/bytedance/ComfyUI-HyperLoRA.git",
+                "ComfyUI/custom_nodes/ComfyUI-HyperLoRA"
+            ])
+
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI_ADV_CLIP_emb"):
+            print("Cloning ComfyUI_ADV_CLIP_emb custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/BlenderNeko/ComfyUI_ADV_CLIP_emb.git",
+                "ComfyUI/custom_nodes/ComfyUI_ADV_CLIP_emb"
+            ])
+
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Pack"):
+            print("Cloning ComfyUI-Impact-Pack custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
+                "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
             ])
 
         # Create model directories
         models_dir = "ComfyUI/models"
         os.makedirs(models_dir, exist_ok=True)
 
-        # Create PuLID directory
-        pulid_dir = f"{models_dir}/pulid"
-        os.makedirs(pulid_dir, exist_ok=True)
-        os.makedirs(f"{pulid_dir}/eva_clip", exist_ok=True)
-
-        # Create insightface and facexlib directories
+        # Create insightface directory
         insightface_dir = f"{models_dir}/insightface/models/antelopev2"
-        facexlib_dir = f"{models_dir}/facexlib"
         os.makedirs(insightface_dir, exist_ok=True)
-        os.makedirs(facexlib_dir, exist_ok=True)
 
-        # Download PuLID weights
-        pulid_adapter = f"{pulid_dir}/ip-adapter_pulid_sdxl_fp16.safetensors"
-        if not os.path.exists(pulid_adapter):
-            print(f"Downloading PuLID weights to {pulid_adapter}...")
+        # Create HyperLoRA directories
+        hyperlora_base_dir = f"{models_dir}/hyper_lora"
+        os.makedirs(hyperlora_base_dir, exist_ok=True)
+
+        # Create clip processor directory
+        clip_processor_dir = f"{hyperlora_base_dir}/clip_processor/clip_vit_large_14_processor"
+        os.makedirs(clip_processor_dir, exist_ok=True)
+
+        # Create clip vit directory
+        clip_vit_dir = f"{hyperlora_base_dir}/clip_vit/clip_vit_large_14"
+        os.makedirs(clip_vit_dir, exist_ok=True)
+
+        # Create HyperLoRA model directory
+        hyperlora_model_dir = f"{hyperlora_base_dir}/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
+        os.makedirs(hyperlora_model_dir, exist_ok=True)
+
+        # Download AntelopeV2 face detection model files
+        antelopev2_files = {
+            "2d106det.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/2d106det.onnx",
+            "1k3d68.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/1k3d68.onnx",
+            "genderage.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/genderage.onnx",
+            "glintr100.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/glintr100.onnx"
+        }
+
+        for filename, url in antelopev2_files.items():
+            model_path = f"{insightface_dir}/{filename}"
+            if not os.path.exists(model_path):
+                print(f"Downloading {filename} to {model_path}...")
+                subprocess.check_call(["pget", "-vf", url, model_path])
+
+        # Download HyperLoRA specific models
+
+        # Download CLIP processor config
+        clip_processor_config = f"{clip_processor_dir}/preprocessor_config.json"
+        if not os.path.exists(clip_processor_config):
+            print(f"Downloading CLIP processor config to {clip_processor_config}...")
             subprocess.check_call([
                 "pget", "-vf",
-                "https://huggingface.co/huchenlei/ipadapter_pulid/resolve/main/ip-adapter_pulid_sdxl_fp16.safetensors",
-                pulid_adapter
+                "https://huggingface.co/openai/clip-vit-large-patch14/resolve/main/preprocessor_config.json",
+                clip_processor_config
             ])
 
-        # Pre-download EVA02-CLIP model to avoid first-run latencyclear
-        eva_model = f"{pulid_dir}/eva_clip/pytorch_model.bin"
-        eva_config = f"{pulid_dir}/eva_clip/config.json"
-        if not os.path.exists(eva_model):
-            print(f"Downloading EVA02-CLIP model to {eva_model}...")
+        # Download CLIP ViT model files
+        clip_vit_config = f"{clip_vit_dir}/config.json"
+        if not os.path.exists(clip_vit_config):
+            print(f"Downloading CLIP ViT config to {clip_vit_config}...")
             subprocess.check_call([
                 "pget", "-vf",
-                "https://huggingface.co/microsoft/LLM2CLIP-EVA02-L-14-336/resolve/main/pytorch_model.bin",
-                eva_model
+                "https://huggingface.co/openai/clip-vit-large-patch14/resolve/main/config.json",
+                clip_vit_config
             ])
 
-        if not os.path.exists(eva_config):
-            print(f"Downloading EVA02-CLIP config to {eva_config}...")
+        clip_vit_model = f"{clip_vit_dir}/model.safetensors"
+        if not os.path.exists(clip_vit_model):
+            print(f"Downloading CLIP ViT model to {clip_vit_model}...")
             subprocess.check_call([
                 "pget", "-vf",
-                "https://huggingface.co/microsoft/LLM2CLIP-EVA02-L-14-336/resolve/main/config.json",
-                eva_config
+                "https://huggingface.co/h94/IP-Adapter/resolve/main/models/clip_vit_large_patch14.safetensors",
+                clip_vit_model
             ])
 
-        # Download facexlib parsing model
-        facexlib_model = f"{facexlib_dir}/parsing_parsenet.pth"
-        if not os.path.exists(facexlib_model):
-            print(f"Downloading facexlib model to {facexlib_model}...")
-            subprocess.check_call([
-                "pget", "-vf",
-                "https://github.com/xinntao/facexlib/releases/download/v0.2.2/parsing_parsenet.pth",
-                facexlib_model
-            ])
+        # Download HyperLoRA model files
+        base_hyperlora_url = "https://huggingface.co/bytedance-research/HyperLoRA/resolve/main"
+        hyperlora_model_files = {
+            "hyper_lora_modules.json": f"{base_hyperlora_url}/sdxl_hyper_id_lora_v1_fidelity/hyper_lora_modules.json",
+            "hyper_lora_modules.safetensors": f"{base_hyperlora_url}/sdxl_hyper_id_lora_v1_fidelity/hyper_lora_modules.safetensors",
+            "id_projector.safetensors": f"{base_hyperlora_url}/sdxl_hyper_id_lora_v1_fidelity/id_projector.safetensors",
+            "resampler.safetensors": f"{base_hyperlora_url}/sdxl_hyper_id_lora_v1_fidelity/resampler.safetensors"
+        }
 
-        # Download AntelopeV2 face detection model
-        antelopev2_model = f"{insightface_dir}/2d106det.onnx"
-        if not os.path.exists(antelopev2_model):
-            print("Downloading AntelopeV2 model...")
-            # Since AntelopeV2 comes as a zip with multiple files, we need to download and extract it
-            tmp_zip = "/tmp/antelopev2.zip"
-            subprocess.check_call([
-                "pget", "-vf",
-                "https://github.com/deepinsight/insightface/releases/download/v0.7/antelopev2.zip",
-                tmp_zip
-            ])
-            # Extract the zip file
-            subprocess.check_call(["unzip", "-o", tmp_zip, "-d", f"{models_dir}/insightface/models"])
-            # Fix directory structure - move files one level up if nested
-            if os.path.exists(f"{insightface_dir}/antelopev2"):
-                # Move all files from nested directory up one level
-                os.system(f"mv {insightface_dir}/antelopev2/* {insightface_dir}/")
-                # Remove the now-empty directory
-                os.system(f"rmdir {insightface_dir}/antelopev2 || true")
-            # Clean up
-            os.remove(tmp_zip)
-
-        # SDXL checkpoint will be handled by weights_manifest.py with a custom mapping
-        # No need to download it here
+        for filename, url in hyperlora_model_files.items():
+            model_path = f"{hyperlora_model_dir}/{filename}"
+            if not os.path.exists(model_path):
+                print(f"Downloading {filename} to {model_path}...")
+                subprocess.check_call(["pget", "-vf", url, model_path])
 
         # Download SDXL VAE
         vae_dir = f"{models_dir}/vae"
@@ -170,40 +192,34 @@ class Predictor(BasePredictor):
             negative_prompt: str = Input(default="", description="Optional negative."),
             reference_image: Path = Input(
                 description="An image containing a face that you want to use as reference for face swapping.",
-                default=None,
             ),
-            width: int = Input(default=512, ge=64, le=1536),
-            height: int = Input(default=512, ge=64, le=1536),
+            width: int = Input(default=768, ge=64, le=1536),
+            height: int = Input(default=768, ge=64, le=1536),
             steps: int = Input(default=30, ge=1, le=150),
-            cfg: float = Input(default=3.0, ge=1.0, le=20.0),
-            sampler_name: str = Input(default="euler_ancestral", choices=["euler", "euler_ancestral", "heun", "dpmpp_2s_ancestral", "uni_pc"]),
-            scheduler: str = Input(default="normal", choices=["beta", "normal"]),
+            cfg: float = Input(default=7.0, ge=1.0, le=20.0),
+            sampler_name: str = Input(default="dpmpp_2m_sde", choices=["euler", "euler_ancestral", "heun", "dpmpp_2s_ancestral", "dpmpp_2m_sde"]),
+            scheduler: str = Input(default="karras", choices=["karras", "normal"]),
             seed: int = Input(default=0, description="0 = random"),
-            method: str = Input(
-                default="fidelity",
-                choices=["fidelity", "style", "both"],
-                description="PuLID method to use: fidelity for face swapping, style for style transfer, both for a mix.",
-            ),
             face_weight: float = Input(
                 default=0.8,
                 ge=0.0,
                 le=1.0,
                 description="Weight of the face adaptation effect (0.0 to 1.0)",
-            ),
+            )
     ) -> List[Path]:
 
         # 1. housekeeping
         self.comfy.cleanup(ALL_DIRS)
-        if seed == 0: seed = int.from_bytes(os.urandom(2), "big")
+        if seed == 0:
+            seed = int.from_bytes(os.urandom(2), "big")
 
-        # If reference image is provided, copy it to input directory
+        # Copy reference image to input directory
         if reference_image:
             reference_path = os.path.join(INPUT_DIR, "reference.png")
             shutil.copy2(reference_image, reference_path)
         else:
-            # If no reference image, we can't use PuLID effectively
-            print("Warning: No reference image provided. PuLID requires a reference face image to work properly.")
-            # We'll still run but results may not show face swap
+            # If no reference image, we can't use HyperLoRA effectively
+            raise ValueError("A reference face image is required for HyperLoRA to work properly.")
 
         # 2. Load workflow.json
         with open(WORKFLOW_JSON) as f:
@@ -220,30 +236,33 @@ class Predictor(BasePredictor):
             return by_id[str(idx)]
 
         # ----- prompt nodes -------------------------------------------------
+        if str(4) in by_id:  # Prompt node
+            node(4)["inputs"]["text"] = f"fcsks fxhks fhyks, {prompt}"
 
-        node(4)["inputs"]["text"] = prompt
-        node(5)["inputs"]["text"] = negative_prompt
+        if str(5) in by_id:  # Negative prompt node
+            node(5)["inputs"]["text"] = negative_prompt
 
         # ----- latent size --------------------------------------------------
-        latent_inputs = node(6)["inputs"]
-        latent_inputs["width"] = self._nearest_multiple(width)
-        latent_inputs["height"] = self._nearest_multiple(height)
-        latent_inputs["batch_size"] = 1
+        if str(6) in by_id:  # Empty Latent Image node
+            latent_inputs = node(6)["inputs"]
+            latent_inputs["width"] = self._nearest_multiple(width)
+            latent_inputs["height"] = self._nearest_multiple(height)
+            latent_inputs["batch_size"] = 1
 
         # ----- sampler settings --------------------------------------------
-        sampler_inputs = node(7)["inputs"]
-        sampler_inputs["seed"] = seed
-        sampler_inputs["steps"] = steps
-        sampler_inputs["cfg"] = cfg
-        sampler_inputs["sampler_name"] = sampler_name
-        sampler_inputs["scheduler"] = scheduler
-        sampler_inputs["denoise"] = 1.0
+        if str(7) in by_id:  # KSampler node
+            sampler_inputs = node(7)["inputs"]
+            sampler_inputs["seed"] = seed
+            sampler_inputs["steps"] = steps
+            sampler_inputs["cfg"] = cfg
+            sampler_inputs["sampler_name"] = sampler_name
+            sampler_inputs["scheduler"] = scheduler
+            sampler_inputs["denoise"] = 1.0
 
-        # ----- PuLID settings ----------------------------------------------
-        # Update the ApplyPulid node with the user's method and weight
-        if str(15) in by_id:
-            node(15)["inputs"]["method"] = method
-            node(15)["inputs"]["weight"] = face_weight
+        # ----- Face adapter settings ---------------------------------------
+        # Update the HyperLoRAApplyLoRA node with weight if it exists
+        if str(9) in by_id and "widgets_values" in by_id[str(9)]:
+            by_id[str(9)]["widgets_values"][0] = face_weight
 
         # Make sure the ImageLoad node points to the reference image
         if str(17) in by_id:
