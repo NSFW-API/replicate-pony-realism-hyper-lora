@@ -31,10 +31,10 @@ class Predictor(BasePredictor):
         os.makedirs(models_dir, exist_ok=True)
 
         # Create HyperLoRA directories
-        hyperlora_dir = f"{models_dir}/hyper_lora"
-        clip_processor_dir = f"{hyperlora_dir}/clip_processor/clip_vit_large_14_processor"
-        clip_vit_dir = f"{hyperlora_dir}/clip_vit/clip_vit_large_14"
-        hyperlora_fidelity_dir = f"{hyperlora_dir}/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
+        hyper_lora_dir = f"{models_dir}/hyper_lora"
+        clip_processor_dir = f"{hyper_lora_dir}/clip_processor/clip_vit_large_14_processor"
+        clip_vit_dir = f"{hyper_lora_dir}/clip_vit/clip_vit_large_14"
+        hyperlora_fidelity_dir = f"{hyper_lora_dir}/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
 
         os.makedirs(clip_processor_dir, exist_ok=True)
         os.makedirs(clip_vit_dir, exist_ok=True)
@@ -53,8 +53,7 @@ class Predictor(BasePredictor):
         os.makedirs(clip_dir, exist_ok=True)
 
         # Download all required models
-        self._download_models(clip_processor_dir, clip_vit_dir, hyperlora_fidelity_dir,
-                              insightface_dir, vae_dir, checkpoints_dir, clip_dir)
+        self._download_models()
 
         # Start ComfyUI server
         print("Starting ComfyUI server...")
@@ -88,35 +87,10 @@ class Predictor(BasePredictor):
                 "ComfyUI/custom_nodes/ComfyUI-HyperLoRA"
             ])
 
-        # Clone Impact Pack (needed for ImpactMakeImageBatch)
-        impact_pack_dir = "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
-        if not os.path.exists(impact_pack_dir):
-            print("Cloning ComfyUI-Impact-Pack...")
-            subprocess.check_call([
-                "git", "clone", "--depth", "1",
-                "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
-                impact_pack_dir
-            ])
-
-            # Install Impact Pack requirements
-            requirements_file = f"{impact_pack_dir}/requirements.txt"
-            print("Installing Impact Pack requirements...")
-            subprocess.check_call([
-                "pip", "install", "-r", requirements_file
-            ])
-
-            # Run the install script
-            install_script = f"{impact_pack_dir}/install.py"
-            print("Running Impact Pack install script...")
-            subprocess.check_call([
-                "python", install_script
-            ])
-
-    def _download_models(self, clip_processor_dir, clip_vit_dir, hyperlora_fidelity_dir,
-                        insightface_dir, vae_dir, checkpoints_dir, clip_dir):
+    def _download_models(self):
         """Download all required model files"""
         # 1. CLIP processor config
-        clip_processor_config = f"{clip_processor_dir}/preprocessor_config.json"
+        clip_processor_config = "ComfyUI/models/hyper_lora/clip_processor/clip_vit_large_14_processor/preprocessor_config.json"
         if not os.path.exists(clip_processor_config):
             print(f"Downloading CLIP processor config...")
             subprocess.check_call([
@@ -126,7 +100,7 @@ class Predictor(BasePredictor):
             ])
 
         # 2. CLIP ViT config and model
-        clip_vit_config = f"{clip_vit_dir}/config.json"
+        clip_vit_config = "ComfyUI/models/hyper_lora/clip_vit/clip_vit_large_14/config.json"
         if not os.path.exists(clip_vit_config):
             print(f"Downloading CLIP ViT config...")
             subprocess.check_call([
@@ -135,7 +109,7 @@ class Predictor(BasePredictor):
                 clip_vit_config
             ])
 
-        clip_vit_model = f"{clip_vit_dir}/model.safetensors"
+        clip_vit_model = "ComfyUI/models/hyper_lora/clip_vit/clip_vit_large_14/model.safetensors"
         if not os.path.exists(clip_vit_model):
             print(f"Downloading CLIP ViT model...")
             subprocess.check_call([
@@ -145,6 +119,7 @@ class Predictor(BasePredictor):
             ])
 
         # 3. HyperLoRA model files
+        hyperlora_base_dir = "ComfyUI/models/hyper_lora/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
         hyperlora_base_url = "https://huggingface.co/bytedance-research/HyperLoRA/resolve/main/sdxl_hyper_id_lora_v1_fidelity"
         hyperlora_files = [
             "hyper_lora_modules.json",
@@ -154,7 +129,7 @@ class Predictor(BasePredictor):
         ]
 
         for file in hyperlora_files:
-            file_path = f"{hyperlora_fidelity_dir}/{file}"
+            file_path = f"{hyperlora_base_dir}/{file}"
             if not os.path.exists(file_path):
                 print(f"Downloading HyperLoRA {file}...")
                 subprocess.check_call([
@@ -171,6 +146,7 @@ class Predictor(BasePredictor):
             "glintr100.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/glintr100.onnx"
         }
 
+        insightface_dir = "ComfyUI/models/insightface/models/antelopev2"
         for filename, url in antelopev2_files.items():
             filepath = os.path.join(insightface_dir, filename)
             if not os.path.exists(filepath):
@@ -178,7 +154,7 @@ class Predictor(BasePredictor):
                 subprocess.check_call(["pget", "-vf", url, filepath])
 
         # 5. SDXL VAE
-        vae_path = f"{vae_dir}/sdxl_vae.safetensors"
+        vae_path = "ComfyUI/models/vae/sdxl_vae.safetensors"
         if not os.path.exists(vae_path):
             print(f"Downloading SDXL VAE...")
             subprocess.check_call([
@@ -188,7 +164,7 @@ class Predictor(BasePredictor):
             ])
 
         # 6. Pony Realism checkpoint
-        checkpoint_path = f"{checkpoints_dir}/pony_realism_23.safetensors"
+        checkpoint_path = "ComfyUI/models/checkpoints/pony_realism_23.safetensors"
         if not os.path.exists(checkpoint_path):
             print(f"Downloading Pony Realism checkpoint...")
             subprocess.check_call([
@@ -197,8 +173,8 @@ class Predictor(BasePredictor):
                 checkpoint_path
             ])
 
-        # 7. T5 CLIP for SDXL (reusing from your PuLID implementation)
-        clip_path = f"{clip_dir}/t5xxl_fp16.safetensors"
+        # 7. T5 CLIP for SDXL (if needed)
+        clip_path = "ComfyUI/models/clip/t5xxl_fp16.safetensors"
         if not os.path.exists(clip_path):
             print(f"Downloading T5 CLIP...")
             subprocess.check_call([
@@ -284,7 +260,7 @@ class Predictor(BasePredictor):
 
         # ----- HyperLoRA settings ------------------------------------------
         # Update the HyperLoRAApplyLoRA node with the user's face weight
-        node(9)["inputs"]["strength"] = face_weight
+        node(9)["inputs"]["weight"] = face_weight
 
         # 4. Run the workflow
         print("Loading workflow...")

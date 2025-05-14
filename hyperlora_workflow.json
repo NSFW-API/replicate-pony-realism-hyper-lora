@@ -32,20 +32,20 @@
   "2": {
     "class_type": "HyperLoRAConfig",
     "inputs": {
-      "clip_processor_name": "clip_vit_large_14_processor",
-      "clip_vision_name": "clip_vit_large_14",
-      "clip_frame_width": 1024,
-      "clip_num_tokens": 64,
-      "clip_num_layers": 12,
-      "clip_num_heads": 4,
-      "clip_num_mha_heads": 4,
-      "face_extractor_method": "clip + arcface",
-      "face_provider": "antelopev2",
-      "face_dim": 512,
-      "face_num_tokens": 16,
-      "lora_target_dim": 128,
-      "lora_num_heads": 8,
-      "fidelity": true
+      "image_processor": "clip_vit_large_14_processor",
+      "image_encoder": "clip_vit_large_14",
+      "resampler.dim": 1024,
+      "resampler.dim_head": 64,
+      "resampler.heads": 12,
+      "resampler.depth": 4,
+      "resampler.ff_mult": 4,
+      "encoder_types": "clip + arcface",
+      "face_analyzer": "antelopev2",
+      "id_embed_dim": 512,
+      "num_id_tokens": 16,
+      "hyper_dim": 128,
+      "lora_rank": 8,
+      "has_base_lora": false
     }
   },
 
@@ -53,8 +53,8 @@
     "class_type": "HyperLoRALoader",
     "inputs": {
       "config": ["2",0],
-      "hyper_lora_name": "sdxl_hyper_id_lora_v1_fidelity",
-      "precision": "fp16"
+      "model": "sdxl_hyper_id_lora_v1_fidelity",
+      "dtype": "fp16"
     }
   },
 
@@ -76,7 +76,9 @@
     "inputs": {
       "hyper_lora": ["3h",0],
       "images": ["17",0],
-      "face_attr": ["4h",0]
+      "face_attr": ["4h",0],
+      "grayscale": false,
+      "remove_background": true
     }
   },
 
@@ -93,7 +95,7 @@
     "inputs": {
       "model": ["10",0],
       "lora": ["8h",0],
-      "strength": 0.8
+      "weight": 0.8
     }
   },
 
