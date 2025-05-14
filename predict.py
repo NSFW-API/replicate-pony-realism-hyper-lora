@@ -40,12 +40,12 @@ class Predictor(BasePredictor):
         os.makedirs(clip_vit_dir, exist_ok=True)
         os.makedirs(hyperlora_fidelity_dir, exist_ok=True)
 
-        # Create insightface directory with correct structure
+        # Create insightface directory with proper structure
         insightface_models_dir = f"{models_dir}/insightface/models"
-        antelopev2_dir = f"{insightface_models_dir}/antelopev2"
-        detection_dir = f"{antelopev2_dir}/detection"
+        insightface_dir = f"{insightface_models_dir}/antelopev2"
+        detection_dir = f"{insightface_dir}/detection"
         os.makedirs(insightface_models_dir, exist_ok=True)
-        os.makedirs(antelopev2_dir, exist_ok=True)
+        os.makedirs(insightface_dir, exist_ok=True)
         os.makedirs(detection_dir, exist_ok=True)
 
         # Other model directories
@@ -57,7 +57,11 @@ class Predictor(BasePredictor):
         os.makedirs(clip_dir, exist_ok=True)
 
         # Download all required models
-        self._download_models()
+        self._download_models(
+            models_dir=models_dir,
+            insightface_dir=insightface_dir,
+            insightface_models_dir=insightface_models_dir
+        )
 
         # Start ComfyUI server
         print("Starting ComfyUI server...")
@@ -91,10 +95,10 @@ class Predictor(BasePredictor):
                 "ComfyUI/custom_nodes/ComfyUI-HyperLoRA"
             ])
 
-    def _download_models(self):
+    def _download_models(self, models_dir, insightface_dir, insightface_models_dir):
         """Download all required model files"""
         # 1. CLIP processor config
-        clip_processor_config = "ComfyUI/models/hyper_lora/clip_processor/clip_vit_large_14_processor/preprocessor_config.json"
+        clip_processor_config = f"{models_dir}/hyper_lora/clip_processor/clip_vit_large_14_processor/preprocessor_config.json"
         if not os.path.exists(clip_processor_config):
             print(f"Downloading CLIP processor config...")
             subprocess.check_call([
@@ -104,7 +108,7 @@ class Predictor(BasePredictor):
             ])
 
         # 2. CLIP ViT config and model
-        clip_vit_config = "ComfyUI/models/hyper_lora/clip_vit/clip_vit_large_14/config.json"
+        clip_vit_config = f"{models_dir}/hyper_lora/clip_vit/clip_vit_large_14/config.json"
         if not os.path.exists(clip_vit_config):
             print(f"Downloading CLIP ViT config...")
             subprocess.check_call([
@@ -113,7 +117,7 @@ class Predictor(BasePredictor):
                 clip_vit_config
             ])
 
-        clip_vit_model = "ComfyUI/models/hyper_lora/clip_vit/clip_vit_large_14/model.safetensors"
+        clip_vit_model = f"{models_dir}/hyper_lora/clip_vit/clip_vit_large_14/model.safetensors"
         if not os.path.exists(clip_vit_model):
             print(f"Downloading CLIP ViT model...")
             subprocess.check_call([
@@ -123,7 +127,7 @@ class Predictor(BasePredictor):
             ])
 
         # 3. HyperLoRA model files
-        hyperlora_base_dir = "ComfyUI/models/hyper_lora/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
+        hyperlora_base_dir = f"{models_dir}/hyper_lora/hyper_lora/sdxl_hyper_id_lora_v1_fidelity"
         hyperlora_base_url = "https://huggingface.co/bytedance-research/HyperLoRA/resolve/main/sdxl_hyper_id_lora_v1_fidelity"
         hyperlora_files = [
             "hyper_lora_modules.json",
@@ -150,15 +154,14 @@ class Predictor(BasePredictor):
             "glintr100.onnx": "https://huggingface.co/MonsterMMORPG/tools/resolve/main/glintr100.onnx"
         }
 
-        insightface_dir = "ComfyUI/models/insightface/models/antelopev2"
         for filename, url in antelopev2_files.items():
             filepath = os.path.join(insightface_dir, filename)
             if not os.path.exists(filepath):
                 print(f"Downloading {filename}...")
                 subprocess.check_call(["pget", "-vf", url, filepath])
 
-        # Download AntelopeV2 zip with all models including detection
-        if not os.path.exists(f"{antelopev2_dir}/detection/model-0000.params"):
+        # 5. Download AntelopeV2 zip with detection models
+        if not os.path.exists(f"{insightface_dir}/detection/model-0000.params"):
             print("Downloading AntelopeV2 models...")
             # Since AntelopeV2 comes as a zip with multiple files, we need to download and extract it
             tmp_zip = "/tmp/antelopev2.zip"
@@ -168,27 +171,27 @@ class Predictor(BasePredictor):
                 tmp_zip
             ])
             # Extract the zip file
-            subprocess.check_call(["unzip", "-o", tmp_zip, "-d", f"{models_dir}/insightface/models"])
+            subprocess.check_call(["unzip", "-o", tmp_zip, "-d", insightface_models_dir])
 
             # Fix directory structure - move files one level up if nested
-            if os.path.exists(f"{antelopev2_dir}/antelopev2"):
+            if os.path.exists(f"{insightface_dir}/antelopev2"):
                 print("Fixing nested directory structure...")
                 # Move all files from nested directory up one level
-                os.system(f"mv {antelopev2_dir}/antelopev2/* {antelopev2_dir}/")
+                os.system(f"mv {insightface_dir}/antelopev2/* {insightface_dir}/")
                 # Remove the now-empty directory
-                os.system(f"rmdir {antelopev2_dir}/antelopev2 || true")
+                os.system(f"rmdir {insightface_dir}/antelopev2 || true")
 
             # Clean up
             os.remove(tmp_zip)
 
             # Debug check
-            print(f"Listing AntelopeV2 directory contents: {antelopev2_dir}")
-            os.system(f"ls -la {antelopev2_dir}")
-            print(f"Checking for detection directory: {antelopev2_dir}/detection")
-            os.system(f"ls -la {antelopev2_dir}/detection || echo 'Detection directory not found'")
+            print(f"Listing AntelopeV2 directory contents: {insightface_dir}")
+            os.system(f"ls -la {insightface_dir}")
+            print(f"Checking for detection directory: {insightface_dir}/detection")
+            os.system(f"ls -la {insightface_dir}/detection || echo 'Detection directory not found'")
 
-        # 5. SDXL VAE
-        vae_path = "ComfyUI/models/vae/sdxl_vae.safetensors"
+        # 6. SDXL VAE
+        vae_path = f"{models_dir}/vae/sdxl_vae.safetensors"
         if not os.path.exists(vae_path):
             print(f"Downloading SDXL VAE...")
             subprocess.check_call([
@@ -197,8 +200,8 @@ class Predictor(BasePredictor):
                 vae_path
             ])
 
-        # 6. Pony Realism checkpoint
-        checkpoint_path = "ComfyUI/models/checkpoints/pony_realism_23.safetensors"
+        # 7. Pony Realism checkpoint
+        checkpoint_path = f"{models_dir}/checkpoints/pony_realism_23.safetensors"
         if not os.path.exists(checkpoint_path):
             print(f"Downloading Pony Realism checkpoint...")
             subprocess.check_call([
@@ -207,8 +210,8 @@ class Predictor(BasePredictor):
                 checkpoint_path
             ])
 
-        # 7. T5 CLIP for SDXL (if needed)
-        clip_path = "ComfyUI/models/clip/t5xxl_fp16.safetensors"
+        # 8. T5 CLIP for SDXL (if needed)
+        clip_path = f"{models_dir}/clip/t5xxl_fp16.safetensors"
         if not os.path.exists(clip_path):
             print(f"Downloading T5 CLIP...")
             subprocess.check_call([
