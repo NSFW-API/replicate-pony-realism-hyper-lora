@@ -6,7 +6,7 @@
 
   "10": {
     "class_type": "CheckpointLoaderSimple",
-    "inputs": { "ckpt_name": "pony_realism_23.safetensors" }
+    "inputs": { "ckpt_name": "cyber_realistic.safetensors" }
   },
 
   "15": {

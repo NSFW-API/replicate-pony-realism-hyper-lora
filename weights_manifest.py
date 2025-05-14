@@ -15,7 +15,7 @@ MODELS_PATH = config["MODELS_PATH"]
 # Create user weights manifest for custom models
 USER_MANIFEST = {
     "CHECKPOINTS": [
-        "pony_realism_23.safetensors",
+        "cyber_realistic.safetensors",
     ],
     "CLIP": [
         "t5xxl_fp16.safetensors"
@@ -161,9 +161,9 @@ class WeightsManifest:
                 update_weights_map(map)
 
         # Add special mappings
-        # Pony Realism SDXL model from NSFW-API
-        weights_map["pony_realism_23.safetensors"] = {
-            "url": "https://huggingface.co/NSFW-API/PonyRealism/resolve/main/pony_realism_23.safetensors",
+        # Cyber Realistic SDXL model from NSFW-API
+        weights_map["cyber_realistic.safetensors"] = {
+            "url": "https://huggingface.co/NSFW-API/CyberRealism/resolve/main/cyberrealisticXL_v11VAE.safetensors",
             "dest": f"{MODELS_PATH}/checkpoints",
         }
 

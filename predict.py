@@ -200,13 +200,13 @@ class Predictor(BasePredictor):
                 vae_path
             ])
 
-        # 7. Pony Realism checkpoint
-        checkpoint_path = f"{models_dir}/checkpoints/pony_realism_23.safetensors"
+        # 7. Cyber Realistic checkpoint
+        checkpoint_path = f"{models_dir}/checkpoints/cyber_realistic.safetensors"
         if not os.path.exists(checkpoint_path):
-            print(f"Downloading Pony Realism checkpoint...")
+            print(f"Downloading Cyber Realistic checkpoint...")
             subprocess.check_call([
                 "pget", "-vf",
-                "https://huggingface.co/NSFW-API/PonyRealism/resolve/main/pony_realism_23.safetensors",
+                "https://huggingface.co/NSFW-API/CyberRealism/resolve/main/cyberrealisticXL_v11VAE.safetensors",
                 checkpoint_path
             ])
 
