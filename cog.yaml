@@ -5,8 +5,6 @@ build:
   system_packages:
     - ffmpeg                  # SaveImage can emit .mp4/gif if you ever add it
     - unzip                   # For extracting AntelopeV2 model
-    - libgl1-mesa-glx         # For OpenCV
-    - libglib2.0-0            # For OpenCV
   python_packages:
     # ----- CUDA / Torch -----
     - "torch==2.2.0"
@@ -48,9 +46,8 @@ build:
     - filelock
     - open-clip-torch>=2.24.0
 
-    # ----- HyperLoRA & PuLID dependencies -----
+    # ----- HyperLoRA dependencies -----
     - insightface==0.7.3
-    - facexlib==0.2.2
     - onnxruntime==1.16.3
   run:
     # faster downloads for 2-3 GB checkpoints

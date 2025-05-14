@@ -1,30 +1,25 @@
 {
   "3": {
     "class_type": "VAELoader",
-    "inputs": {
-      "vae_name": "sdxl_vae.safetensors"
-    }
+    "inputs": { "vae_name": "sdxl_vae.safetensors" }
   },
+
   "4": {
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "fcsks fxhks fhyks, {prompt}",
-      "clip": [
-        "15",
-        1
-      ]
+      "clip": ["15",1]
     }
   },
+
   "5": {
     "class_type": "CLIPTextEncode",
     "inputs": {
-      "text": "lowres, bad anatomy",
-      "clip": [
-        "15",
-        1
-      ]
+      "text": "{negative_prompt}",
+      "clip": ["15",1]
     }
   },
+
   "6": {
     "class_type": "EmptyLatentImage",
     "inputs": {
@@ -33,6 +28,7 @@
       "batch_size": 1
     }
   },
+
   "2": {
     "class_type": "HyperLoRAConfig",
     "inputs": {
@@ -52,107 +48,71 @@
       "fidelity": true
     }
   },
+
   "3h": {
     "class_type": "HyperLoRALoader",
     "inputs": {
-      "config": [
-        "2",
-        0
-      ],
+      "config": ["2",0],
       "hyper_lora_name": "sdxl_hyper_id_lora_v1_fidelity",
       "precision": "fp16"
     }
   },
+
   "17": {
     "class_type": "LoadImage",
-    "inputs": {
-      "image": "reference.png"
-    }
+    "inputs": { "image": "reference.png" }
   },
+
   "5b": {
     "class_type": "ImpactMakeImageBatch",
-    "inputs": {
-      "image1": [
-        "17",
-        0
-      ]
-    }
+    "inputs": { "image1": ["17",0] }
   },
+
   "4h": {
     "class_type": "HyperLoRAFaceAttr",
     "inputs": {
-      "hyper_lora": [
-        "3h",
-        0
-      ],
-      "images": [
-        "5b",
-        0
-      ]
+      "hyper_lora": ["3h",0],
+      "images": ["5b",0]
     }
   },
+
   "7h": {
     "class_type": "HyperLoRAIDCond",
     "inputs": {
-      "hyper_lora": [
-        "3h",
-        0
-      ],
-      "images": [
-        "5b",
-        0
-      ],
-      "face_attr": [
-        "4h",
-        0
-      ]
+      "hyper_lora": ["3h",0],
+      "images": ["5b",0],
+      "face_attr": ["4h",0]
     }
   },
+
   "8h": {
     "class_type": "HyperLoRAGenerateIDLoRA",
     "inputs": {
-      "hyper_lora": [
-        "3h",
-        0
-      ],
-      "id_cond": [
-        "7h",
-        0
-      ]
+      "hyper_lora": ["3h",0],
+      "id_cond": ["7h",0]
     }
   },
+
   "9h": {
     "class_type": "HyperLoRAApplyLoRA",
     "inputs": {
-      "model": [
-        "10",
-        0
-      ],
-      "lora": [
-        "8h",
-        0
-      ],
+      "model": ["10",0],
+      "lora": ["8h",0],
       "strength": 0.8
     }
   },
+
   "10": {
     "class_type": "CheckpointLoaderSimple",
-    "inputs": {
-      "ckpt_name": "pony_realism_23.safetensors"
-    }
+    "inputs": { "ckpt_name": "pony_realism_23.safetensors" }
   },
+
   "15": {
     "class_type": "CLIPSetLastLayer",
-    "inputs": {
-      "clip": [
-        "10",
-        1
-      ]
-    },
-    "widgets_values": [
-      -2
-    ]
+    "inputs": { "clip": ["10",1] },
+    "widgets_values": [-2]
   },
+
   "7": {
     "class_type": "KSampler",
     "inputs": {
@@ -162,45 +122,26 @@
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
       "denoise": 1,
-      "model": [
-        "9h",
-        0
-      ],
-      "positive": [
-        "4",
-        0
-      ],
-      "negative": [
-        "5",
-        0
-      ],
-      "latent_image": [
-        "6",
-        0
-      ]
+      "model": ["9h",0],
+      "positive": ["4",0],
+      "negative": ["5",0],
+      "latent_image": ["6",0]
     }
   },
+
   "8": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": [
-        "7",
-        0
-      ],
-      "vae": [
-        "3",
-        0
-      ]
+      "samples": ["7",0],
+      "vae": ["3",0]
     }
   },
+
   "9": {
     "class_type": "SaveImage",
     "inputs": {
       "filename_prefix": "ComfyUI",
-      "images": [
-        "8",
-        0
-      ]
+      "images": ["8",0]
     }
   }
 }
