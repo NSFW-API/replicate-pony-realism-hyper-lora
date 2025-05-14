@@ -157,18 +157,35 @@ class Predictor(BasePredictor):
                 print(f"Downloading {filename}...")
                 subprocess.check_call(["pget", "-vf", url, filepath])
 
-        # Add detection model files (required by InsightFace)
-        detection_dir = f"{insightface_dir}/detection"
-        detection_files = {
-            "model-0000.params": "https://huggingface.co/Bullseye-Digital/insightface-detection/resolve/main/model-0000.params",
-            "model-symbol.json": "https://huggingface.co/Bullseye-Digital/insightface-detection/resolve/main/model-symbol.json"
-        }
+        # Download AntelopeV2 zip with all models including detection
+        if not os.path.exists(f"{antelopev2_dir}/detection/model-0000.params"):
+            print("Downloading AntelopeV2 models...")
+            # Since AntelopeV2 comes as a zip with multiple files, we need to download and extract it
+            tmp_zip = "/tmp/antelopev2.zip"
+            subprocess.check_call([
+                "pget", "-vf",
+                "https://github.com/deepinsight/insightface/releases/download/v0.7/antelopev2.zip",
+                tmp_zip
+            ])
+            # Extract the zip file
+            subprocess.check_call(["unzip", "-o", tmp_zip, "-d", f"{models_dir}/insightface/models"])
 
-        for filename, url in detection_files.items():
-            filepath = os.path.join(detection_dir, filename)
-            if not os.path.exists(filepath):
-                print(f"Downloading InsightFace detection {filename}...")
-                subprocess.check_call(["pget", "-vf", url, filepath])
+            # Fix directory structure - move files one level up if nested
+            if os.path.exists(f"{antelopev2_dir}/antelopev2"):
+                print("Fixing nested directory structure...")
+                # Move all files from nested directory up one level
+                os.system(f"mv {antelopev2_dir}/antelopev2/* {antelopev2_dir}/")
+                # Remove the now-empty directory
+                os.system(f"rmdir {antelopev2_dir}/antelopev2 || true")
+
+            # Clean up
+            os.remove(tmp_zip)
+
+            # Debug check
+            print(f"Listing AntelopeV2 directory contents: {antelopev2_dir}")
+            os.system(f"ls -la {antelopev2_dir}")
+            print(f"Checking for detection directory: {antelopev2_dir}/detection")
+            os.system(f"ls -la {antelopev2_dir}/detection || echo 'Detection directory not found'")
 
         # 5. SDXL VAE
         vae_path = "ComfyUI/models/vae/sdxl_vae.safetensors"
