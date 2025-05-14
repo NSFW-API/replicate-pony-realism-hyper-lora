@@ -89,12 +89,27 @@ class Predictor(BasePredictor):
             ])
 
         # Clone Impact Pack (needed for ImpactMakeImageBatch)
-        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Pack"):
+        impact_pack_dir = "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
+        if not os.path.exists(impact_pack_dir):
             print("Cloning ComfyUI-Impact-Pack...")
             subprocess.check_call([
                 "git", "clone", "--depth", "1",
                 "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
-                "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
+                impact_pack_dir
+            ])
+
+            # Install Impact Pack requirements
+            requirements_file = f"{impact_pack_dir}/requirements.txt"
+            print("Installing Impact Pack requirements...")
+            subprocess.check_call([
+                "pip", "install", "-r", requirements_file
+            ])
+
+            # Run the install script
+            install_script = f"{impact_pack_dir}/install.py"
+            print("Running Impact Pack install script...")
+            subprocess.check_call([
+                "python", install_script
             ])
 
     def _download_models(self, clip_processor_dir, clip_vit_dir, hyperlora_fidelity_dir,

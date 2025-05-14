@@ -63,16 +63,11 @@
     "inputs": { "image": "reference.png" }
   },
 
-  "5b": {
-    "class_type": "ImpactMakeImageBatch",
-    "inputs": { "image1": ["17",0] }
-  },
-
   "4h": {
     "class_type": "HyperLoRAFaceAttr",
     "inputs": {
       "hyper_lora": ["3h",0],
-      "images": ["5b",0]
+      "images": ["17",0]
     }
   },
 
@@ -80,7 +75,7 @@
     "class_type": "HyperLoRAIDCond",
     "inputs": {
       "hyper_lora": ["3h",0],
-      "images": ["5b",0],
+      "images": ["17",0],
       "face_attr": ["4h",0]
     }
   },
