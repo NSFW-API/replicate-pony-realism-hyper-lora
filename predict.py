@@ -200,13 +200,13 @@ class Predictor(BasePredictor):
                 vae_path
             ])
 
-        # 7. Cyber Realistic checkpoint
-        checkpoint_path = f"{models_dir}/checkpoints/cyber_realistic.safetensors"
+        # 7. RealVis checkpoint
+        checkpoint_path = f"{models_dir}/checkpoints/realvis.safetensors"
         if not os.path.exists(checkpoint_path):
-            print(f"Downloading Cyber Realistic checkpoint...")
+            print(f"Downloading RealVis checkpoint...")
             subprocess.check_call([
                 "pget", "-vf",
-                "https://huggingface.co/NSFW-API/CyberRealism/resolve/main/cyberrealisticXL_v11VAE.safetensors",
+                "https://huggingface.co/NSFW-API/RealVisXL/resolve/main/realvisXL_v5.safetensors",
                 checkpoint_path
             ])
 

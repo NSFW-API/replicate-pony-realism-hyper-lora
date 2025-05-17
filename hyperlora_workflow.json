@@ -6,7 +6,7 @@
 
   "10": {
     "class_type": "CheckpointLoaderSimple",
-    "inputs": { "ckpt_name": "cyber_realistic.safetensors" }
+    "inputs": { "ckpt_name": "realvis.safetensors" }
   },
 
   "15": {
