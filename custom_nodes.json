@@ -18,5 +18,9 @@
   {
     "repo": "https://github.com/cubiq/ComfyUI_InstantID",
     "commit": "72495e8"
+  },
+  {
+    "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Subpack",
+    "commit": "0e2638b"
   }
 ]

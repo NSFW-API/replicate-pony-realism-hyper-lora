@@ -156,6 +156,15 @@ class Predictor(BasePredictor):
                 "pip", "install", "insightface==0.7.3", "onnxruntime==1.16.3"
             ])
 
+        # Add this new code to clone Impact Subpack
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Subpack"):
+            print("Cloning ComfyUI-Impact-Subpack custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/ltdrdata/ComfyUI-Impact-Subpack.git",
+                "ComfyUI/custom_nodes/ComfyUI-Impact-Subpack"
+            ])
+
     def _download_models(self, models_dir, insightface_dir, insightface_models_dir,
                          instantid_dir, controlnet_dir, face_detection_dir):
         """Download all required model files"""
