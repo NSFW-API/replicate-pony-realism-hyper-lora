@@ -104,20 +104,25 @@ class Predictor(BasePredictor):
                 "ComfyUI/custom_nodes/a-person-mask-generator"
             ])
 
-            # Install a-person-mask-generator dependencies
+            # Install a-person-mask-generator requirements directly
             print("Installing a-person-mask-generator dependencies...")
             subprocess.check_call([
-                "pip", "install", "-r",
-                "ComfyUI/custom_nodes/a-person-mask-generator/requirements.txt"
+                "pip", "install", "mediapipe==0.10.11"
             ])
 
-        # Clone ComfyUI-Impact-Pack repository for the GrowMask node (if not already in core)
+        # Clone ComfyUI-Impact-Pack repository for the GrowMask node
         if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Pack"):
             print("Cloning ComfyUI-Impact-Pack custom node...")
             subprocess.check_call([
                 "git", "clone", "--depth", "1",
                 "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
                 "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
+            ])
+
+            # Install Impact Pack dependencies directly
+            print("Installing ComfyUI-Impact-Pack dependencies...")
+            subprocess.check_call([
+                "pip", "install", "piexif==1.1.3", "wget==3.2"
             ])
 
     def _download_models(self, models_dir, insightface_dir, insightface_models_dir):
@@ -316,6 +321,18 @@ class Predictor(BasePredictor):
 
         if "20" in by_id:  # Make sure node 20 exists in the workflow
             node(20)["inputs"]["image"] = "source.png"
+
+        # Fix the APersonMaskGenerator node parameters
+        if "21" in by_id and by_id["21"]["class_type"] == "APersonMaskGenerator":
+            by_id["21"]["inputs"].update({
+                "face_mask": True,  # Instead of detect_face
+                "background_mask": True,  # To mask the background
+                "hair_mask": True,  # Instead of detect_hair
+                "body_mask": False,  # Instead of detect_body
+                "clothes_mask": False,  # Instead of detect_cloth/detect_clothes
+                "confidence": 0.4,  # Instead of dilation
+                "refine_mask": False  # Already added this one
+            })
 
         # ----- latent size --------------------------------------------------
         latent_inputs = node(6)["inputs"]

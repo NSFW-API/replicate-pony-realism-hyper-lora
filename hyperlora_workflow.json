@@ -68,7 +68,9 @@
       "detect_hair": true,
       "detect_body": false,
       "detect_cloth": false,
-      "dilation": 0
+      "detect_clothes": false,
+      "dilation": 0.4,
+      "refine_mask": false
     }
   },
   "22": {
