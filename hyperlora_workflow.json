@@ -210,22 +210,15 @@
     "inputs": {}
   },
   "31": {
-    "class_type": "FaceAnalysisLoader",
+    "class_type": "InstantIDFaceAnalysis",
     "inputs": {
       "provider": "CPU"
     }
   },
   "32": {
-    "class_type": "InstantIDFaceAnalysis",
+    "class_type": "ControlNetLoader",
     "inputs": {
-      "insightface": [
-        "31",
-        0
-      ],
-      "image": [
-        "17",
-        0
-      ]
+      "control_net_name": "instantid_controlnet.safetensors"
     }
   },
   "33": {
@@ -239,12 +232,16 @@
         "31",
         0
       ],
-      "model": [
-        "9h",
+      "control_net": [
+        "new_control_net_node",
         0
       ],
       "image": [
-        "32",
+        "17",
+        0
+      ],
+      "model": [
+        "9h",
         0
       ],
       "positive": [
@@ -255,8 +252,9 @@
         "5",
         0
       ],
-      "weight_faceid": 0.8,
-      "weight_cnet": 0.8
+      "weight": 0.8,
+      "start_at": 0.0,
+      "end_at": 1.0
     }
   },
   "40": {

@@ -25,6 +25,9 @@ USER_MANIFEST = {
     ],
     "PULID": [
         "ip-adapter_pulid_sdxl_fp16.safetensors"
+    ],
+    "CONTROLNET": [  # Add this section
+        "instantid_controlnet.safetensors"
     ]
 }
 
@@ -177,6 +180,11 @@ class WeightsManifest:
         weights_map["sdxl_vae.safetensors"] = {
             "url": "https://huggingface.co/stabilityai/sdxl-vae/resolve/main/sdxl_vae.safetensors",
             "dest": f"{MODELS_PATH}/vae",
+        }
+
+        weights_map["instantid_controlnet.safetensors"] = {
+            "url": "https://huggingface.co/InstantID/InstantID/resolve/main/controlnet_models/diffusion_pytorch_model.safetensors",
+            "dest": f"{MODELS_PATH}/controlnet",
         }
 
         return weights_map
