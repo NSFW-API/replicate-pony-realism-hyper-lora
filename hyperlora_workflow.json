@@ -17,19 +17,17 @@
       "clip": [
         "10",
         1
-      ]
-    },
-    "widgets_values": [
-      -2
-    ]
+      ],
+      "stop_at_clip_layer": -2
+    }
   },
   "4": {
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "fcsks fxhks fhyks, {prompt}",
       "clip": [
-        "10",
-        1
+        "15",
+        0
       ]
     }
   },
@@ -38,8 +36,8 @@
     "inputs": {
       "text": "{negative_prompt}",
       "clip": [
-        "10",
-        1
+        "15",
+        0
       ]
     }
   },
@@ -207,7 +205,9 @@
   },
   "30": {
     "class_type": "InstantIDModelLoader",
-    "inputs": {}
+    "inputs": {
+      "instantid_file": "ip-adapter.bin"
+    }
   },
   "31": {
     "class_type": "InstantIDFaceAnalysis",
@@ -233,7 +233,7 @@
         0
       ],
       "control_net": [
-        "new_control_net_node",
+        "32",
         0
       ],
       "image": [
@@ -253,6 +253,8 @@
         0
       ],
       "weight": 0.8,
+      "weight_faceid": 0.8,
+      "weight_cnet": 0.8,
       "start_at": 0.0,
       "end_at": 1.0
     }
@@ -334,18 +336,37 @@
         "40",
         0
       ],
-      "wildcard": "",
+      "sam_model_opt": null,
+      "segm_detector_opt": null,
       "detailer_hook": null,
-      "cycle": 1,
-      "denoise": 0.5,
+      "scheduler_func_opt": null,
+      "guide_size": 896,
+      "guide_size_for": "bbox",
+      "max_size": 1024,
       "seed": 812345678,
       "steps": 20,
       "cfg": 7.0,
       "sampler_name": "dpmpp_2m",
       "scheduler": "karras",
-      "base_size": 896,
+      "denoise": 0.5,
+      "feather": 0.2,
+      "noise_mask": false,
+      "force_inpaint": false,
+      "bbox_threshold": 0.5,
+      "bbox_dilation": 0,
+      "bbox_crop_factor": 3.0,
+      "sam_detection_hint": "center-1",
+      "sam_dilation": 15,
+      "sam_threshold": 0.93,
+      "sam_bbox_expansion": 0,
+      "sam_mask_hint_threshold": 0.7,
+      "sam_mask_hint_use_negative": "Small",
+      "drop_size": 10,
+      "wildcard": "",
+      "cycle": 1,
       "detection_hint_min_size": 256,
-      "detection_hint_max_size": 1024
+      "detection_hint_max_size": 1024,
+      "base_size": 896
     }
   },
   "9": {

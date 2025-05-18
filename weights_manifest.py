@@ -28,6 +28,9 @@ USER_MANIFEST = {
     ],
     "CONTROLNET": [  # Add this section
         "instantid_controlnet.safetensors"
+    ],
+    "INSTANTID": [
+        "ip-adapter.bin"
     ]
 }
 
@@ -185,6 +188,11 @@ class WeightsManifest:
         weights_map["instantid_controlnet.safetensors"] = {
             "url": "https://huggingface.co/InstantID/InstantID/resolve/main/controlnet_models/diffusion_pytorch_model.safetensors",
             "dest": f"{MODELS_PATH}/controlnet",
+        }
+
+        weights_map["ip-adapter.bin"] = {
+            "url": "https://huggingface.co/InstantX/InstantID/resolve/main/ip-adapter.bin",
+            "dest": f"{MODELS_PATH}/instantid",
         }
 
         return weights_map
