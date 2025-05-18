@@ -1,8 +1,8 @@
 import json
 import os
+import shutil
 import subprocess
 import time
-import shutil
 from typing import List
 
 from cog import BasePredictor, Input, Path
@@ -14,6 +14,7 @@ WORKFLOW_JSON = "hyperlora_workflow.json"
 OUTPUT_DIR = "/tmp/outputs"
 INPUT_DIR = "/tmp/inputs"
 ALL_DIRS = [OUTPUT_DIR, INPUT_DIR]
+
 
 # ----------------------------------------------------------------------------
 
@@ -48,6 +49,18 @@ class Predictor(BasePredictor):
         os.makedirs(insightface_dir, exist_ok=True)
         os.makedirs(detection_dir, exist_ok=True)
 
+        # Create InstantID directories
+        instantid_dir = f"{models_dir}/instantid"
+        os.makedirs(instantid_dir, exist_ok=True)
+        controlnet_dir = f"{models_dir}/controlnet"
+        os.makedirs(controlnet_dir, exist_ok=True)
+
+        # Create FaceDetailer directories (from Impact Pack)
+        ultralytics_dir = f"{models_dir}/ultralytics"
+        os.makedirs(ultralytics_dir, exist_ok=True)
+        face_detection_dir = f"{ultralytics_dir}/bbox"
+        os.makedirs(face_detection_dir, exist_ok=True)
+
         # Other model directories
         vae_dir = f"{models_dir}/vae"
         checkpoints_dir = f"{models_dir}/checkpoints"
@@ -60,7 +73,10 @@ class Predictor(BasePredictor):
         self._download_models(
             models_dir=models_dir,
             insightface_dir=insightface_dir,
-            insightface_models_dir=insightface_models_dir
+            insightface_models_dir=insightface_models_dir,
+            instantid_dir=instantid_dir,
+            controlnet_dir=controlnet_dir,
+            face_detection_dir=face_detection_dir
         )
 
         # Start ComfyUI server
@@ -110,7 +126,7 @@ class Predictor(BasePredictor):
                 "pip", "install", "mediapipe==0.10.11"
             ])
 
-        # Clone ComfyUI-Impact-Pack repository for the GrowMask node
+        # Clone ComfyUI-Impact-Pack repository for the GrowMask node and FaceDetailer
         if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Pack"):
             print("Cloning ComfyUI-Impact-Pack custom node...")
             subprocess.check_call([
@@ -122,10 +138,26 @@ class Predictor(BasePredictor):
             # Install Impact Pack dependencies directly
             print("Installing ComfyUI-Impact-Pack dependencies...")
             subprocess.check_call([
-                "pip", "install", "piexif==1.1.3", "wget==3.2"
+                "pip", "install", "piexif==1.1.3", "wget==3.2", "ultralytics==8.0.145"
             ])
 
-    def _download_models(self, models_dir, insightface_dir, insightface_models_dir):
+        # Clone ComfyUI_InstantID repository
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI_InstantID"):
+            print("Cloning ComfyUI_InstantID custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/cubiq/ComfyUI_InstantID.git",
+                "ComfyUI/custom_nodes/ComfyUI_InstantID"
+            ])
+
+            # Install ComfyUI_InstantID dependencies
+            print("Installing ComfyUI_InstantID dependencies...")
+            subprocess.check_call([
+                "pip", "install", "insightface==0.7.3", "onnxruntime==1.16.3"
+            ])
+
+    def _download_models(self, models_dir, insightface_dir, insightface_models_dir,
+                         instantid_dir, controlnet_dir, face_detection_dir):
         """Download all required model files"""
         # 1. CLIP processor config
         clip_processor_config = f"{models_dir}/hyper_lora/clip_processor/clip_vit_large_14_processor/preprocessor_config.json"
@@ -250,6 +282,57 @@ class Predictor(BasePredictor):
                 clip_path
             ])
 
+        # 9. InstantID ControlNet and IP-Adapter model using tar files
+        instantid_checkpoints_dir = f"{models_dir}/instantid"
+        os.makedirs(instantid_checkpoints_dir, exist_ok=True)
+
+        if not os.path.exists(f"{controlnet_dir}/instantid_controlnet.safetensors") or not os.path.exists(
+                f"{instantid_dir}/ip-adapter.bin"):
+            print(f"Downloading InstantID checkpoints (ControlNet and IP-Adapter)...")
+            instantid_checkpoints_url = "https://weights.replicate.delivery/default/InstantID/checkpoints.tar"
+            subprocess.check_call([
+                "pget", "-vf", "-x",
+                instantid_checkpoints_url,
+                instantid_checkpoints_dir
+            ])
+
+            # Check for extracted files at their actual locations
+            if os.path.exists(f"{instantid_dir}/ControlNetModel/diffusion_pytorch_model.safetensors"):
+                # Copy to the expected location for the workflow
+                shutil.copy2(
+                    f"{instantid_dir}/ControlNetModel/diffusion_pytorch_model.safetensors",
+                    f"{controlnet_dir}/instantid_controlnet.safetensors"
+                )
+                print(f"Copied InstantID ControlNet model to {controlnet_dir}/instantid_controlnet.safetensors")
+
+            # No need to copy ip-adapter.bin since it's already in the right location
+
+            # Verify files exist
+            if not os.path.exists(f"{instantid_dir}/ip-adapter.bin"):
+                raise RuntimeError(f"InstantID ip-adapter.bin not found after download!")
+            if not os.path.exists(f"{controlnet_dir}/instantid_controlnet.safetensors"):
+                raise RuntimeError(f"InstantID controlnet model not found after download!")
+
+        # 10. InstantID IP-Adapter model
+        instantid_ip_adapter_path = f"{instantid_dir}/ip-adapter.bin"
+        if not os.path.exists(instantid_ip_adapter_path):
+            print(f"Downloading InstantID IP-Adapter...")
+            subprocess.check_call([
+                "pget", "-vf",
+                "https://huggingface.co/InstantID/InstantID/resolve/main/ip-adapter.bin",
+                instantid_ip_adapter_path
+            ])
+
+        # 11. FaceDetailer - YOLOv8 face detection model
+        faceyolo_path = f"{face_detection_dir}/face_yolov8m.pt"
+        if not os.path.exists(faceyolo_path):
+            print(f"Downloading YOLOv8 face detection model...")
+            subprocess.check_call([
+                "pget", "-vf",
+                "https://huggingface.co/Bingsu/adetailer/resolve/main/face_yolov8m.pt",
+                faceyolo_path
+            ])
+
     # ---- helpers -----------------------------------------------------------
     def _nearest_multiple(self, x: int, k: int = 8) -> int:
         return ((x + k - 1) // k) * k
@@ -269,7 +352,9 @@ class Predictor(BasePredictor):
             height: int = Input(default=1024, ge=64, le=1536),
             steps: int = Input(default=30, ge=1, le=150),
             cfg: float = Input(default=7.0, ge=1.0, le=20.0),
-            sampler_name: str = Input(default="dpmpp_2m_sde", choices=["euler", "euler_ancestral", "heun", "dpmpp_2s_ancestral", "dpmpp_2m", "dpmpp_2m_sde", "dpmpp_sde", "uni_pc"]),
+            sampler_name: str = Input(default="dpmpp_2m_sde",
+                                      choices=["euler", "euler_ancestral", "heun", "dpmpp_2s_ancestral", "dpmpp_2m",
+                                               "dpmpp_2m_sde", "dpmpp_sde", "uni_pc"]),
             scheduler: str = Input(default="karras", choices=["normal", "karras"]),
             seed: int = Input(default=0, description="0 = random"),
             face_weight: float = Input(
@@ -277,6 +362,18 @@ class Predictor(BasePredictor):
                 ge=0.0,
                 le=1.0,
                 description="Weight of the face adaptation effect (0.0 to 1.0)",
+            ),
+            instantid_weight: float = Input(
+                default=0.8,
+                ge=0.0,
+                le=1.0,
+                description="Weight of the InstantID effect (0.0 to 1.0)",
+            ),
+            facedetail_strength: float = Input(
+                default=0.5,
+                ge=0.0,
+                le=1.0,
+                description="Strength of face detail enhancement",
             ),
     ) -> List[Path]:
 
@@ -296,7 +393,9 @@ class Predictor(BasePredictor):
         source_path = os.path.join(INPUT_DIR, "source.png")
         shutil.copy2(source_image, source_path)
 
-        # 2. Load workflow.json
+        # 2. Load workflow with combined technologies
+        print("Loading combined HyperLoRA + InstantID + FaceDetailer workflow")
+
         with open(WORKFLOW_JSON) as f:
             wf = json.load(f)
 
@@ -306,52 +405,49 @@ class Predictor(BasePredictor):
         else:  # Style A
             by_id = wf
 
-        def node(idx: int):
+        def node(idx):
             """Return the node dict for a given numeric id"""
             return by_id[str(idx)]
 
-        # ----- prompt nodes -------------------------------------------------
+        # ----- prompt nodes and images -------------------------------------------------
         node(4)["inputs"]["text"] = f"fcsks fxhks fhyks, {prompt}"
         node(5)["inputs"]["text"] = negative_prompt
 
-        if "9h" in by_id:
-            node("9h")["inputs"]["weight"] = face_weight
-        elif "9" in by_id and by_id["9"]["class_type"] == "HyperLoRAApplyLoRA":
-            node(9)["inputs"]["weight"] = face_weight
-
-        if "20" in by_id:  # Make sure node 20 exists in the workflow
+        # Make sure reference and source images are set
+        if "17" in by_id:  # Reference image
+            node(17)["inputs"]["image"] = "reference.png"
+        if "20" in by_id:  # Source image
             node(20)["inputs"]["image"] = "source.png"
 
-        # Fix the APersonMaskGenerator node parameters
-        if "21" in by_id and by_id["21"]["class_type"] == "APersonMaskGenerator":
-            by_id["21"]["inputs"].update({
-                "face_mask": True,  # Instead of detect_face
-                "background_mask": False,  # To mask the background
-                "hair_mask": True,  # Instead of detect_hair
-                "body_mask": False,  # Instead of detect_body
-                "clothes_mask": False,  # Instead of detect_cloth/detect_clothes
-                "confidence": 0.4,  # Instead of dilation
-                "refine_mask": False  # Already added this one
-            })
-
         # ----- latent size --------------------------------------------------
-        latent_inputs = node(6)["inputs"]
-        latent_inputs["width"] = self._nearest_multiple(width)
-        latent_inputs["height"] = self._nearest_multiple(height)
-        latent_inputs["batch_size"] = 1
+        if "6" in by_id:
+            node(6)["inputs"]["width"] = self._nearest_multiple(width)
+            node(6)["inputs"]["height"] = self._nearest_multiple(height)
+            node(6)["inputs"]["batch_size"] = 1
 
         # ----- sampler settings --------------------------------------------
-        sampler_inputs = node(7)["inputs"]
-        sampler_inputs["seed"] = seed
-        sampler_inputs["steps"] = steps
-        sampler_inputs["cfg"] = cfg
-        sampler_inputs["sampler_name"] = sampler_name
-        sampler_inputs["scheduler"] = scheduler
-        sampler_inputs["denoise"] = 1.0
+        if "7" in by_id:
+            node(7)["inputs"]["seed"] = seed
+            node(7)["inputs"]["steps"] = steps
+            node(7)["inputs"]["cfg"] = cfg
+            node(7)["inputs"]["sampler_name"] = sampler_name
+            node(7)["inputs"]["scheduler"] = scheduler
 
         # ----- HyperLoRA settings ------------------------------------------
-        # Update the HyperLoRAApplyLoRA node with the user's face weight
-        node(9)["inputs"]["weight"] = face_weight
+        if "9h" in by_id:
+            node("9h")["inputs"]["weight"] = face_weight
+
+        # ----- InstantID settings ------------------------------------------
+        if "33" in by_id:
+            node(33)["inputs"]["weight_faceid"] = instantid_weight
+            node(33)["inputs"]["weight_cnet"] = instantid_weight
+
+        # ----- FaceDetailer settings ---------------------------------------
+        if "50" in by_id:
+            node(50)["inputs"]["denoise"] = facedetail_strength
+            node(50)["inputs"]["steps"] = int(steps * 0.75)  # Use fewer steps for detailing
+            node(50)["inputs"]["cfg"] = cfg
+            node(50)["inputs"]["seed"] = seed + 1  # Use a different seed for variation
 
         # 4. Run the workflow
         print("Loading workflow...")

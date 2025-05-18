@@ -14,5 +14,9 @@
   {
     "repo": "https://github.com/djbielejeski/a-person-mask-generator",
     "commit": "eeb7cfa"
+  },
+  {
+    "repo": "https://github.com/cubiq/ComfyUI_InstantID",
+    "commit": "72495e8"
   }
 ]

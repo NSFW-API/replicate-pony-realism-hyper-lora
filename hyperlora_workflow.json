@@ -64,12 +64,12 @@
         "20",
         0
       ],
-      "detect_face": true,
-      "detect_hair": true,
-      "detect_body": false,
-      "detect_cloth": false,
-      "detect_clothes": false,
-      "dilation": 0.4,
+      "face_mask": true,
+      "background_mask": false,
+      "hair_mask": true,
+      "body_mask": false,
+      "clothes_mask": false,
+      "confidence": 0.4,
       "refine_mask": false
     }
   },
@@ -80,7 +80,7 @@
         "21",
         0
       ],
-      "expand": 50,
+      "expand": 10,
       "tapered_corners": true
     }
   },
@@ -205,6 +205,66 @@
       "weight": 0.8
     }
   },
+  "30": {
+    "class_type": "InstantIDModelLoader",
+    "inputs": {}
+  },
+  "31": {
+    "class_type": "FaceAnalysisLoader",
+    "inputs": {
+      "provider": "CPU"
+    }
+  },
+  "32": {
+    "class_type": "InstantIDFaceAnalysis",
+    "inputs": {
+      "insightface": [
+        "31",
+        0
+      ],
+      "image": [
+        "17",
+        0
+      ]
+    }
+  },
+  "33": {
+    "class_type": "ApplyInstantID",
+    "inputs": {
+      "instantid": [
+        "30",
+        0
+      ],
+      "insightface": [
+        "31",
+        0
+      ],
+      "model": [
+        "9h",
+        0
+      ],
+      "image": [
+        "32",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "weight_faceid": 0.8,
+      "weight_cnet": 0.8
+    }
+  },
+  "40": {
+    "class_type": "UltralyticsDetectorProvider",
+    "inputs": {
+      "model_name": "bbox/face_yolov8m.pt"
+    }
+  },
   "7": {
     "class_type": "KSampler",
     "inputs": {
@@ -215,16 +275,16 @@
       "scheduler": "karras",
       "denoise": 0.45,
       "model": [
-        "9h",
+        "33",
         0
       ],
       "positive": [
-        "4",
-        0
+        "33",
+        1
       ],
       "negative": [
-        "5",
-        0
+        "33",
+        2
       ],
       "latent_image": [
         "24",
@@ -245,12 +305,57 @@
       ]
     }
   },
+  "50": {
+    "class_type": "FaceDetailer",
+    "inputs": {
+      "image": [
+        "8",
+        0
+      ],
+      "model": [
+        "33",
+        0
+      ],
+      "clip": [
+        "15",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ],
+      "positive": [
+        "33",
+        1
+      ],
+      "negative": [
+        "33",
+        2
+      ],
+      "bbox_detector": [
+        "40",
+        0
+      ],
+      "wildcard": "",
+      "detailer_hook": null,
+      "cycle": 1,
+      "denoise": 0.5,
+      "seed": 812345678,
+      "steps": 20,
+      "cfg": 7.0,
+      "sampler_name": "dpmpp_2m",
+      "scheduler": "karras",
+      "base_size": 896,
+      "detection_hint_min_size": 256,
+      "detection_hint_max_size": 1024
+    }
+  },
   "9": {
     "class_type": "SaveImage",
     "inputs": {
       "filename_prefix": "ComfyUI",
       "images": [
-        "8",
+        "50",
         0
       ]
     }
