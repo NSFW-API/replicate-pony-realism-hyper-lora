@@ -10,5 +10,9 @@
   {
     "repo": "https://github.com/ltdrdata/ComfyUI-Impact-Pack",
     "commit": "cd34cfd"
+  },
+  {
+    "repo": "https://github.com/djbielejeski/a-person-mask-generator",
+    "commit": "eeb7cfa"
   }
 ]

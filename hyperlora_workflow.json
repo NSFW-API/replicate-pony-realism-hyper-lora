@@ -1,36 +1,54 @@
 {
   "3": {
     "class_type": "VAELoader",
-    "inputs": { "vae_name": "sdxl_vae.safetensors" }
+    "inputs": {
+      "vae_name": "sdxl_vae.safetensors"
+    }
   },
-
   "10": {
     "class_type": "CheckpointLoaderSimple",
-    "inputs": { "ckpt_name": "realvis.safetensors" }
+    "inputs": {
+      "ckpt_name": "realvis.safetensors"
+    }
   },
-
   "15": {
     "class_type": "CLIPSetLastLayer",
-    "inputs": { "clip": ["10",1] },
-    "widgets_values": [-2]
+    "inputs": {
+      "clip": [
+        "10",
+        1
+      ]
+    },
+    "widgets_values": [
+      -2
+    ]
   },
-
   "4": {
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "fcsks fxhks fhyks, {prompt}",
-      "clip": ["10",1]
+      "clip": [
+        "10",
+        1
+      ]
     }
   },
-
   "5": {
     "class_type": "CLIPTextEncode",
     "inputs": {
       "text": "{negative_prompt}",
-      "clip": ["10",1]
+      "clip": [
+        "10",
+        1
+      ]
     }
   },
-
+  "20": {
+    "class_type": "LoadImage",
+    "inputs": {
+      "image": "source.png"
+    }
+  },
   "6": {
     "class_type": "EmptyLatentImage",
     "inputs": {
@@ -39,7 +57,57 @@
       "batch_size": 1
     }
   },
-
+  "21": {
+    "class_type": "APersonMaskGenerator",
+    "inputs": {
+      "images": [
+        "20",
+        0
+      ],
+      "detect_face": true,
+      "detect_hair": true,
+      "detect_body": false,
+      "detect_cloth": false,
+      "dilation": 0
+    }
+  },
+  "22": {
+    "class_type": "GrowMask",
+    "inputs": {
+      "mask": [
+        "21",
+        0
+      ],
+      "expand": 50,
+      "tapered_corners": true
+    }
+  },
+  "23": {
+    "class_type": "VAEEncode",
+    "inputs": {
+      "pixels": [
+        "20",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
+    }
+  },
+  "24": {
+    "class_type": "SetLatentNoiseMask",
+    "inputs": {
+      "samples": [
+        "23",
+        0
+      ],
+      "mask": [
+        "22",
+        0
+      ]
+    }
+  },
   "2": {
     "class_type": "HyperLoRAConfig",
     "inputs": {
@@ -59,57 +127,82 @@
       "has_base_lora": false
     }
   },
-
   "3h": {
     "class_type": "HyperLoRALoader",
     "inputs": {
-      "config": ["2",0],
+      "config": [
+        "2",
+        0
+      ],
       "model": "sdxl_hyper_id_lora_v1_fidelity",
       "dtype": "fp16"
     }
   },
-
   "17": {
     "class_type": "LoadImage",
-    "inputs": { "image": "reference.png" }
+    "inputs": {
+      "image": "reference.png"
+    }
   },
-
   "4h": {
     "class_type": "HyperLoRAFaceAttr",
     "inputs": {
-      "hyper_lora": ["3h",0],
-      "images": ["17",0]
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "images": [
+        "17",
+        0
+      ]
     }
   },
-
   "7h": {
     "class_type": "HyperLoRAIDCond",
     "inputs": {
-      "hyper_lora": ["3h",0],
-      "images": ["17",0],
-      "face_attr": ["4h",0],
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "images": [
+        "17",
+        0
+      ],
+      "face_attr": [
+        "4h",
+        0
+      ],
       "grayscale": false,
       "remove_background": true
     }
   },
-
   "8h": {
     "class_type": "HyperLoRAGenerateIDLoRA",
     "inputs": {
-      "hyper_lora": ["3h",0],
-      "id_cond": ["7h",0]
+      "hyper_lora": [
+        "3h",
+        0
+      ],
+      "id_cond": [
+        "7h",
+        0
+      ]
     }
   },
-
   "9h": {
     "class_type": "HyperLoRAApplyLoRA",
     "inputs": {
-      "model": ["10",0],
-      "lora": ["8h",0],
+      "model": [
+        "10",
+        0
+      ],
+      "lora": [
+        "8h",
+        0
+      ],
       "weight": 0.8
     }
   },
-
   "7": {
     "class_type": "KSampler",
     "inputs": {
@@ -118,27 +211,46 @@
       "cfg": 7,
       "sampler_name": "dpmpp_2m_sde",
       "scheduler": "karras",
-      "denoise": 1,
-      "model": ["9h",0],
-      "positive": ["4",0],
-      "negative": ["5",0],
-      "latent_image": ["6",0]
+      "denoise": 0.45,
+      "model": [
+        "9h",
+        0
+      ],
+      "positive": [
+        "4",
+        0
+      ],
+      "negative": [
+        "5",
+        0
+      ],
+      "latent_image": [
+        "24",
+        0
+      ]
     }
   },
-
   "8": {
     "class_type": "VAEDecode",
     "inputs": {
-      "samples": ["7",0],
-      "vae": ["3",0]
+      "samples": [
+        "7",
+        0
+      ],
+      "vae": [
+        "3",
+        0
+      ]
     }
   },
-
   "9": {
     "class_type": "SaveImage",
     "inputs": {
       "filename_prefix": "ComfyUI",
-      "images": ["8",0]
+      "images": [
+        "8",
+        0
+      ]
     }
   }
 }

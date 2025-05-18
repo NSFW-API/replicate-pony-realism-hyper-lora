@@ -95,6 +95,31 @@ class Predictor(BasePredictor):
                 "ComfyUI/custom_nodes/ComfyUI-HyperLoRA"
             ])
 
+        # Clone a-person-mask-generator repository
+        if not os.path.exists("ComfyUI/custom_nodes/a-person-mask-generator"):
+            print("Cloning a-person-mask-generator custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/djbielejeski/a-person-mask-generator.git",
+                "ComfyUI/custom_nodes/a-person-mask-generator"
+            ])
+
+            # Install a-person-mask-generator dependencies
+            print("Installing a-person-mask-generator dependencies...")
+            subprocess.check_call([
+                "pip", "install", "-r",
+                "ComfyUI/custom_nodes/a-person-mask-generator/requirements.txt"
+            ])
+
+        # Clone ComfyUI-Impact-Pack repository for the GrowMask node (if not already in core)
+        if not os.path.exists("ComfyUI/custom_nodes/ComfyUI-Impact-Pack"):
+            print("Cloning ComfyUI-Impact-Pack custom node...")
+            subprocess.check_call([
+                "git", "clone", "--depth", "1",
+                "https://github.com/ltdrdata/ComfyUI-Impact-Pack.git",
+                "ComfyUI/custom_nodes/ComfyUI-Impact-Pack"
+            ])
+
     def _download_models(self, models_dir, insightface_dir, insightface_models_dir):
         """Download all required model files"""
         # 1. CLIP processor config
@@ -230,6 +255,7 @@ class Predictor(BasePredictor):
             self,
             prompt: str = Input(description="Main text prompt."),
             negative_prompt: str = Input(default="lowres, bad anatomy", description="Negative prompt."),
+            source_image: Path = Input(description="The base image where the face will be replaced"),
             reference_image: Path = Input(
                 description="An image containing a face that you want to use as reference for face swapping.",
                 default=None,
@@ -262,6 +288,9 @@ class Predictor(BasePredictor):
             print("Error: HyperLoRA requires a reference face image to work properly.")
             raise ValueError("A reference image with a face is required.")
 
+        source_path = os.path.join(INPUT_DIR, "source.png")
+        shutil.copy2(source_image, source_path)
+
         # 2. Load workflow.json
         with open(WORKFLOW_JSON) as f:
             wf = json.load(f)
@@ -279,6 +308,14 @@ class Predictor(BasePredictor):
         # ----- prompt nodes -------------------------------------------------
         node(4)["inputs"]["text"] = f"fcsks fxhks fhyks, {prompt}"
         node(5)["inputs"]["text"] = negative_prompt
+
+        if "9h" in by_id:
+            node("9h")["inputs"]["weight"] = face_weight
+        elif "9" in by_id and by_id["9"]["class_type"] == "HyperLoRAApplyLoRA":
+            node(9)["inputs"]["weight"] = face_weight
+
+        if "20" in by_id:  # Make sure node 20 exists in the workflow
+            node(20)["inputs"]["image"] = "source.png"
 
         # ----- latent size --------------------------------------------------
         latent_inputs = node(6)["inputs"]
