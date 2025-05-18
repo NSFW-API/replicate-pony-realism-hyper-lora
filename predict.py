@@ -326,7 +326,7 @@ class Predictor(BasePredictor):
         if "21" in by_id and by_id["21"]["class_type"] == "APersonMaskGenerator":
             by_id["21"]["inputs"].update({
                 "face_mask": True,  # Instead of detect_face
-                "background_mask": True,  # To mask the background
+                "background_mask": False,  # To mask the background
                 "hair_mask": True,  # Instead of detect_hair
                 "body_mask": False,  # Instead of detect_body
                 "clothes_mask": False,  # Instead of detect_cloth/detect_clothes
